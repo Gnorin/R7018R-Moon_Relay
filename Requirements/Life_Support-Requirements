@@ -1,0 +1,6 @@
+This document outlines the operational requirements for the satellites life support system.
+
+1. The life support system shall keep the all electrical subsystem within an operational temperature.
+2. The life support system shall control the temperature of the electrical subsystems.
+3. The life support system shall monitor the temperature of the electrical subsystems.
+4. The life support system shall be operational for 10 years.
