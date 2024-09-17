@@ -1,0 +1,5 @@
+Thruster requierments
+The thruster shall be operational after 10 years.
+The propellant used for the thrusters shall remain usable after 10 years.
+The thruster shall be powerful enough to take the satellite to graveyard orbit.
+The thruster shall have enough fuel to take the satellite to graveyard orbit.
