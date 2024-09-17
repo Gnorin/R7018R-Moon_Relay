@@ -1,0 +1,4 @@
+Star Tracker Operational
+1. The Star Tracker shall be operational for 10 years.
+2. The Star Tracker shall be able to take pictures with a camera.
+3. The Star Tracker shall be configurable by the OBC.
