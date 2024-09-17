@@ -2,5 +2,5 @@ Battery Requirements Operational
 
 1. The Battery shall provide the spacecraft with a maximum of 250 Watts.
 2. The Battery must be rechargeable.
-3. The Battery must last for 10 years.
+3. The Battery must be operational for 10 years.
 4. The Battery shall have a kill switch for EOL.

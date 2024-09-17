@@ -1,0 +1,6 @@
+Antenna and Transponder Operational Requirements
+1. The Antenna and Transponder shall at maximum require 80 watts of power.
+2. The Antenna and Transponder shall be able to receive and send TC.
+3. The Antenna and Transponder shall be able to receive and send TM.
+4. The Antenna and Transponder must be operational for 10 years.
+5. The Antenna and Transponder must operate at a bitrate of 10 Mb/s.
