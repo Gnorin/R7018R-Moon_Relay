@@ -1,0 +1,10 @@
+Safe Mode State
+REQ #1 - The Spacecraft shall have a SAFE mode.
+REQ #2 - Upon entering SAFE MODE, the spacecraft shall cancel all TC.
+REQ #3 - Upon entering SAFE MODE, the spacecraft shall cancel all TM.
+REQ #4 - Upon entering SAFE MODE, the spacecraft shall NADIR point towards the EARTH.
+REQ #5 - Upon entering SAFE MODE, the spacecraft shall be able to receive TC from Earth Ground station.
+REQ #6 - In SAFE MODE, the spacecraft must be able to send data to the Ground Station on Earth at request from the Ground station.
+REQ #7 - In SAFE MODE, the solar panels must be able to automatically face the sun.
+REQ #8 - The Spacecraft shall be able to switch from SAFE MODE to NOMINAL MODE at request from Ground station TC.
+REQ #9 - The Spacecraft shall be able to switch from SAFE MODE to MANOEUVER MODE at request from Ground station TC.

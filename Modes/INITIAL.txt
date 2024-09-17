@@ -1,0 +1,5 @@
+Initial Mode State
+
+REQ #1 - The Spacecraft shall have a Initial Mode.
+REQ #2 - The Spacecraft shall enter Initial Mode right after turning on.
+REQ #3 - Upon Initialization and boot up is complete, the OBC shall switch to SAFE mode Automatically.
