@@ -1,0 +1,9 @@
+Attitude Control requierments
+The spacecraft shall be able to hold a stable position.
+The ACS shall be able to orient the spacecraft so that the antenna is pointing towards the moon base.
+The ACS shall be able to orient the spacecraft so that the antenna is pointing towards the ground station.
+The ACS shall be operational for more than 10 years.
+The ACS shall be able to recover from tumbling within 24 hours in the case of an anomaly.
+The ACS shall be able to adjust the satellite’s angular velocity with a resolution of 0.001 degrees/second.
+The ACS shall control the three axes of rotation.
+The ACS shall compensate for external forces such as solar radiation pressure.
