@@ -1,0 +1,11 @@
+MANEOUVER Mode State
+REQ #1 - The spacecraft shall have a MANEOUVER mode.
+REQ #2 - The spacecraft shall allow TC from Ground station to operate Attitude control fully within MANEOUVER MODE.
+REQ #3 - The spacecraft shall automatically enter SAFE MODE from MANEOUVER MODE if battery charge <25% of max capacity.
+REQ #4 - The spacecraft shall automatically enter SAFE MODE from MANEOUVER MODE incase of system fault.
+REQ #5 - The spacecraft shall enter SAFE MODE from MANEOUVER MODE at request of TC from Ground Station.
+REQ #6 - The spacecraft shall enter NOMINAL MODE from MANEOUVER MODE at request of TC from Ground Station.
+REQ #7 - The OBDH shall be able to hold 100 KB memory in MANEOUVER MODE.
+REQ #8 - The OBDH shall be able to perform scheduled attitude control in MANEOUVER mode from instructions within MANEOUVER MODE memory.
+REQ #9 - The OBDH shall be able to store TC from the ground station within the memory of MANEOUVER MODE.
+REQ #10 - The spacecraft shall enter NOMINAL MODE at completion of scheduled MANEOUVER MODE altitude control.

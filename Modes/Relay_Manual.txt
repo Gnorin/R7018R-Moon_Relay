@@ -1,0 +1,7 @@
+Relay_Manual Mode
+REQ #1 - The spacecraft shall have a Relay_Manual Mode.
+REQ #2 - The spacecraft shall enter SAFE MODE from Relay_Manual incase of System error.
+REQ #3 - The spacecraft shall be able to receive TC's in Relay_Manual mode.
+REQ #4 - The spacecraft shall be able to scheduele commands in Relay_Manual.
+REQ #5 - The spacecraft shall be able to store 1 gigabyte of memory in Relay_Manual Mode.
+REQ #3 - The spacecraft shall enter SAFE MODE from Relay_Manual at request of TC from Groundstation.
