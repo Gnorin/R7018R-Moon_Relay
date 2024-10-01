@@ -9,4 +9,7 @@ REQ #7 - The spacecraft shall enter MANEOUVER mode from Nominal Mode at request 
 REQ #8 - The spacecraft shall be able to turn solar panels automatically towards the sun in Nominal Mode.
 REQ #9 - The spacecraft shall be able to use a Star Tracker in Nominal Mode.
 REQ #10 - The spacecraft shall be able to schedule uses of the star tracker via request of Ground station.
-
+REQ #11 - The spacecraft must be able to receive TC's and not interpret if meant for another receiver.
+REQ #12 - The spacecraft must be able to store TC's meant to be forwarded to other receivers.
+REQ #13 - The spacecraft must be able to send TM meant as forwarded commands to designated receivers.
+REQ #14 - The spacecraft must be able to schedule the sending of TM's to other receivers.
