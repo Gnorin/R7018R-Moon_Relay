@@ -1,0 +1,14 @@
+Abbreviations:
+OBC	-	On-Board Computer
+OBSW	-	On-Board Software
+TMR	-	Tripple Modular Redundancy
+
+
+F1. The OBC shall run the OBSW.
+
+F2. The OBC shall have enough memory to house the OBSW
+
+F3. The OBC shall be redundant.
+P1. The OBC shall use TMR
+
+F4. The OBC shall interface with the all other spacecraft systems.
