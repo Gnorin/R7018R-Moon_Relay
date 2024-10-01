@@ -4,7 +4,9 @@ REQ #2 - The spacecraft shall enter SAFE MODE from Nominal Mode incase of System
 REQ #3 - The spacecraft shall be able to receive TC's in Nominal mode.
 REQ #4 - The spacecraft shall be able to schedule commands in Nominal mode.
 REQ #5 - The spacecraft shall be able to store 1 gigabyte of memory in Nominal Mode.
-REQ #6 - The spacecraft shall enter SAFE MODE from Nominal Mode at request of TC from Groundstation.
-REQ #7 - The spacecraft shall enter MANEOUVER mode from Nominal Mode at request of TC from Groundstation.
+REQ #6 - The spacecraft shall enter SAFE MODE from Nominal Mode at request of TC from Ground station.
+REQ #7 - The spacecraft shall enter MANEOUVER mode from Nominal Mode at request of TC from Ground station.
 REQ #8 - The spacecraft shall be able to turn solar panels automatically towards the sun in Nominal Mode.
 REQ #9 - The spacecraft shall be able to use a Star Tracker in Nominal Mode.
+REQ #10 - The spacecraft shall be able to schedule uses of the star tracker via request of Ground station.
+
