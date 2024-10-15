@@ -40,7 +40,7 @@ def spacecraft(clientsocket : socket.socket):
 accepted_sockets = [
     b'command_line',
     b'ground_station',
-    b'spacecraft',
+    b'spacecraft'
 ]
 
 threads = [
