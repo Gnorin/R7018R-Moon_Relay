@@ -9,3 +9,5 @@ BIM = [
       ['battery_kill',                  ['command', 'NULL']],
       
       ]
+
+listan = [[1, 2,1], ["data"], [1]]
