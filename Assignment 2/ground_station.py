@@ -31,18 +31,30 @@ def command_line_input(clientsocket : socket):
     global active_sockets
     thread_id = threading.current_thread().name
     is_thread_alive = True
-    while is_thread_alive == True:
-        telecommand = clientsocket.recv()
-        
-        # Check telecommand here, if the telecommand is valid, add it to the pile of telecommands.        
-        telecommands.append(telecommand)
+    connection = b'command_line'
+    try:
 
-        # Checks if the thread is still alive, and effectively terminates it doesn't exist anymore.
+        while is_thread_alive == True:
+            telecommand = clientsocket.recv(4096)
+            
+            # Check telecommand here, if the telecommand is valid, add it to the pile of telecommands.        
+            if telecommand != b'':
+                telecommands.append(telecommand)
+
+            # Checks if the thread is still alive, and effectively terminates it doesn't exist anymore.
+            for active_socket in active_sockets:
+                if active_socket[1] == thread_id:
+                    break
+            else:
+                return
+    except:
+        index = 0
         for active_socket in active_sockets:
-            if active_socket[1] == thread_id:
-                break
-        else:
-            return
+            if connection == active_socket[0]:
+                active_sockets = active_sockets[:index] + active_sockets[index+1:]
+                print(f"\nError:\t{connection.decode('utf-8')} : terminated")
+                return
+            index += 1
 
 
 # spacecraft_downlink(clientsocket : socket) is designed to receive data through a socket from the spacecraft.py script.
@@ -50,19 +62,29 @@ def spacecraft_downlink(clientsocket : socket):
     global active_sockets
     thread_id = threading.current_thread().name
     is_thread_alive = True
-    while is_thread_alive == True:
-        data = clientsocket.recv(4096)
-        if data != b'':
-            # This section has to be fleshed out to support proper data downlink.
-            print(f"here is the data: {data}")
-            spacecraft_data.append(data)
-        
-        # Checks if the thread is still alive, and effectively terminates it doesn't exist anymore.
+    connection = b'spacecraft'
+    try:
+        while is_thread_alive == True:
+            data = clientsocket.recv(4096)
+            if data != b'':
+                # This section has to be fleshed out to support proper data downlink.
+                print(f"here is the data: {data}")
+                spacecraft_data.append(data)
+            
+            # Checks if the thread is still alive, and effectively terminates it doesn't exist anymore.
+            for active_socket in active_sockets:
+                if active_socket[1] == thread_id:
+                    break
+            else:
+                return
+    except:
+        index = 0
         for active_socket in active_sockets:
-            if active_socket[1] == thread_id:
-                break
-        else:
-            return
+            if connection == active_socket[0]:
+                active_sockets = active_sockets[:index] + active_sockets[index+1:]
+                print(f"\nError:\t{connection.decode('utf-8')} : terminated")
+                return
+            index += 1
 
 
 # The subroutines which are initiated by incoming sockets.
@@ -74,14 +96,24 @@ subroutines = [
 # The subroutines which are initiated by this ground station
 def spacecraft_uplink(spacecraft_socket : socket):
     global telecommands
-    while True:
-        nr_of_sent_commands = 0
-        for telecommand in telecommands:
-            spacecraft_socket.send(telecommand)
-            nr_of_sent_commands += 1
+    connection = b'ground_station'
+    try:
+        while True:
+            nr_of_sent_commands = 0
+            for telecommand in telecommands:
+                spacecraft_socket.send(telecommand)
+                nr_of_sent_commands += 1
 
-        # Erases the previous sent telecommands
-        telecommands = telecommands[nr_of_sent_commands:]
+            # Erases the previous sent telecommands
+            telecommands = telecommands[nr_of_sent_commands:]
+    except:
+        index = 0
+        for active_socket in active_sockets:
+            if connection == active_socket[0]:
+                active_sockets = active_sockets[:index] + active_sockets[index+1:]
+                print(f"\nError:\t{connection.decode('utf-8')} : terminated")
+                return
+            index += 1
 
 
 
@@ -150,7 +182,7 @@ serversocket.listen(2)
 ###############################################################################################################
 
 # A list of current commands which are being handled in the main loop.
-telecommands = [b"tc_relay configure id=404"]
+telecommands = []
 
 # The data received from the spacecraft
 spacecraft_data = []
@@ -193,4 +225,11 @@ while True:
             sleep(0.1)
             send_telecommands_thread.start()
         except:
+            index = 0
+            for active_socket in active_sockets:
+                if b'ground_station' == active_socket[0]:
+                    active_sockets = active_sockets[:index] + active_sockets[index+1:]
+                    print(f"\nError:\tground_station : terminated")
+                    break
+                index += 1
             print("Connection to spacecraft failed.")

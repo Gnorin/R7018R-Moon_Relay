@@ -31,35 +31,57 @@ def spacecraft_uplink(clientsocket : socket):
     global telecommands
     thread_id = threading.current_thread().name
     is_thread_alive = True
-    while is_thread_alive == True:
-        if telecommands != []:
-            print(telecommands[0].decode('utf-8'))
-            telecommands = telecommands[1:]
+    connection = b'ground_station'
+    try:
+        while is_thread_alive == True:
+            telecommands.append(clientsocket.recv(4096))
+            if telecommands != []:
+                for telecommand in telecommands:
+                    print(telecommand.decode('utf-8'))
+                telecommands = []
 
-        # Checks if the thread is still alive, and effectively terminates it doesn't exist anymore.
+            # Checks if the thread is still alive, and effectively terminates it doesn't exist anymore.
+            for active_socket in active_sockets:
+                if active_socket[1] == thread_id:
+                    break
+            else:
+                return
+    except:
+        index = 0
         for active_socket in active_sockets:
-            if active_socket[1] == thread_id:
-                break
-        else:
-            return
+            if connection == active_socket[0]:
+                active_sockets = active_sockets[:index] + active_sockets[index+1:]
+                print(f"\nError:\t{connection.decode('utf-8')} : terminated")
+                return
+            index += 1
 
 def payload_downlink(clientsocket : socket):
     global active_sockets
     thread_id = threading.current_thread().name
     is_thread_alive = True
-    while is_thread_alive == True:
-        data = clientsocket.recv(4096)
-        if data != b'':
-            # This section has to be fleshed out to support proper data downlink.
-            print(f"here is the payload data: {data}")
-            payload_data.append(data)
+    connection = b'payload'
+    try:
+        while is_thread_alive == True:
+            data = clientsocket.recv(4096)
+            if data != b'':
+                # This section has to be fleshed out to support proper data downlink.
+                print(f"here is the payload data: {data}")
+                payload_data.append(data)
 
-        # Checks if the thread is still alive, and effectively terminates it doesn't exist anymore.
+            # Checks if the thread is still alive, and effectively terminates it doesn't exist anymore.
+            for active_socket in active_sockets:
+                if active_socket[1] == thread_id:
+                    break
+            else:
+                return
+    except:
+        index = 0
         for active_socket in active_sockets:
-            if active_socket[1] == thread_id:
-                break
-        else:
-            return
+            if connection == active_socket[0]:
+                active_sockets = active_sockets[:index] + active_sockets[index+1:]
+                print(f"\nError:\t{connection.decode('utf-8')} : terminated")
+                return
+            index += 1
 
 # The subroutines which are initiated by an incoming socket
 subroutines = [
@@ -73,17 +95,27 @@ def spacecraft_downlink(clientsocket : socket):
     global telemetry
     thread_id = threading.current_thread().name
     is_thread_alive = True
-    while is_thread_alive == True:
-        if telemetry != []:
-            clientsocket.send(telemetry[0])
-            telemetry = telemetry[1:]
+    connection = b'spacecraft'
+    try:
+        while is_thread_alive == True:
+            if telemetry != []:
+                clientsocket.send(telemetry[0])
+                telemetry = telemetry[1:]
 
-        # Checks if the thread is still alive, and effectively terminates it doesn't exist anymore.
+            # Checks if the thread is still alive, and effectively terminates it doesn't exist anymore.
+            for active_socket in active_sockets:
+                if active_socket[1] == thread_id:
+                    break
+            else:
+                return
+    except:
+        index = 0
         for active_socket in active_sockets:
-            if active_socket[1] == thread_id:
-                break
-        else:
-            return
+            if connection == active_socket[0]:
+                active_sockets = active_sockets[:index] + active_sockets[index+1:]
+                print(f"\nError:\t{connection.decode('utf-8')} : terminated")
+                return
+            index += 1
 
 
 ###############################################################################################################
@@ -154,7 +186,7 @@ serversocket.listen(2)
 ###############################################################################################################
 
 # A list of current commands which are being handled in the main loop.
-telecommands = [b"tc_relay configure id=404"]
+telecommands = []
 
 # A list of current commands which are being handled in the main loop.
 telemetry = [b'HK:t0=temp0,t1=temp1,b=bcharge']
@@ -202,4 +234,11 @@ while True:
             sleep(0.1) # Slight delay to enable the ground station to finish reading the message
             send_telemetry_thread.start()
         except:
+            index = 0
+            for active_socket in active_sockets:
+                if b'spacecraft' == active_socket[0]:
+                    active_sockets = active_sockets[:index] + active_sockets[index+1:]
+                    print(f"\nError:\tspacecraft : terminated")
+                    break
+                index += 1
             print("Connection to ground station failed.")
