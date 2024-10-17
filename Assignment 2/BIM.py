@@ -5,7 +5,7 @@ BIM = [
       ['mode',                ['check', 'change']],
       ['attitude',               ['get','change']],
       ['star_tracker',   ['on','off','configure']],
-      ['scheduele',   ['command','clear','check']],
-      ['battery_kill',                  'command'],
+      ['schedule',   ['command','clear','check']],
+      ['battery_kill',                  ['command', 'NULL']],
       
       ]

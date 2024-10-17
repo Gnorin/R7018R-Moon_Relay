@@ -1,51 +1,70 @@
-import check_TC
-import OBSW_functions
+import BIM
+command_list = BIM.BIM
 
-input = "housekeeping configure data"
+
+
+
 
 
 
 def read_TC(input):
-    
-    
-    r1 = 0
-    c1 = -1
-    c2 = 0
-
-    while r1 < len(input):
-        
-        if input[r1] == ' ' and c1 == -1:
-            c1 = r1
-        elif input[r1] == ' ':
-            c2 = r1
-            break
-        r1 = r1+1
-
-
-    function_input = input[0:c1]
-    argument_input = input[c1+1:c2]
-    data_input = input[c2+1:len(input)]
-    
-
-
-    if check_TC.check_TC(function_input,argument_input) == 1:
-
-        match function_input:
-            case "tc_relay":
-                OBSW_functions.tc_relay(argument_input,data_input)   
-            case "housekeeping":
-                OBSW_functions.housekeeping(argument_input,data_input)   
-            case 'mode':
-                OBSW_functions.mode(argument_input,data_input)   
-            case 'attitude':
-                OBSW_functions.attitude(argument_input,data_input)   
-            case 'star_tracker':
-                OBSW_functions.star_tracker(argument_input,data_input)   
-            case 'scheduele':
-                OBSW_functions.schedule(argument_input,data_input)   
-            case 'battery_kill':
-                OBSW_functions.battery_kill(argument_input,data_input)
-            case _:
-                print("Unexpected")
+    #Divides the input into Function, argument and data
+    if type(input) != type(" "):
+        print("Not a string")
+        return 0
     else:
-        print("Invalid TC")
+        cut1 = -1
+
+    cut1 = -1
+    cut2= -1
+    i1 = 0
+
+
+    while i1 < len(input):
+        if input[i1] == " " and cut1 == -1:
+            cut1 = i1
+        elif input[i1] == " " and cut2 == -1:
+            cut2 = i1
+        else:
+            i1 = i1
+        i1 = i1 +1
+
+
+    functionality = input[0:cut1]
+    argument = input[cut1+1:cut2]
+    data = input[cut2+1:len(input)]
+    
+    #check if the functionality and argument exists
+
+    functionality_flag = False
+    argument_flag = False
+    b = 0
+    c = 0
+    
+    while b < len(command_list):
+        if functionality == command_list[b][0]:
+            
+            functionality_flag = True
+            break
+        else:
+            b = b+1
+
+    
+    if b < 7:
+        while c < len(command_list[b][1]):
+            if argument == command_list[b][1][c]:
+                
+                argument_flag = True
+                break
+            else:
+                c = c+1
+    else:
+        functionality_flag = False
+
+
+    if functionality_flag + argument_flag == 2:
+        return[functionality,argument,data]
+    else:
+        return 0
+
+
