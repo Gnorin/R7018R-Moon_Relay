@@ -1,10 +1,21 @@
-import socket
-import time
+import socket as soc
+from socket import socket
+from time import sleep
 
-clientsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+###############################################################################################################
+### Configuration
+###############################################################################################################
+# Socket which will listen for and accept incoming sockets. 
+payload_socket = socket(soc.AF_INET, soc.SOCK_STREAM)
 
-clientsocket.connect(('localhost', 10000))
+# Configures the accepted sockets. Format needs to be bytes to match with the returned data from the sockets.
+accepted_sockets = None
 
-clientsocket.send(b'payload')
+address = 'localhost'   # Address used for our groundstation and spacecraft sockets.
+spaceport = 11000            # Port used for our groundstation socket.
 
-time.sleep(10)
+payload_socket.connect(('localhost', spaceport))
+
+payload_socket.send(b'payload')
+
+sleep(10)
