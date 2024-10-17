@@ -215,8 +215,8 @@ def unpacman(TC):
     TC = TC.decode('utf-8')
     a = 0
     while a < len(TC):
-        if TC[0] == ";":
-            return[TC[0:4],TC[5:len(TC)]] 
+        if TC[a] == ";":
+            return[TC[0:a],TC[a:len(TC)]] 
         else:
             return 0
         
