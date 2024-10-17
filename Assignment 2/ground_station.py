@@ -5,7 +5,7 @@ from threading import Thread
 from time import sleep
 
 ###############################################################################################################
-### Global Variables / Configuration
+### Configuration
 ###############################################################################################################
 # Socket which will listen for and accept incoming sockets. 
 serversocket = socket(soc.AF_INET, soc.SOCK_STREAM)
@@ -18,7 +18,7 @@ accepted_sockets = [
 
 address = 'localhost'   # Address used for our groundstation and spacecraft sockets.
 port = 10000            # Port used for our groundstation socket.
-spaceport = 11000       # Port used for by the spacecraft socket.
+spaceport = 11000       # Port used for our spacecraft socket.
 
 
 ###############################################################################################################
@@ -28,21 +28,32 @@ spaceport = 11000       # Port used for by the spacecraft socket.
 # command_line_input(clientsocket : socket) is designed to receive commands through a socket from the command_line.
 # This function handles telecommands received from the command line socket and checks if that sent telecommand is valid in our MIB
 def command_line_input(clientsocket : socket):
-    while True:
+    global active_sockets
+    thread_id = threading.current_thread().name
+    is_thread_alive = True
+    while is_thread_alive == True:
         telecommand = clientsocket.recv()
         
         # Check telecommand here, if the telecommand is valid, add it to the pile of telecommands.        
         telecommands.append(telecommand)
 
+        # Checks if the thread is still alive, and effectively terminates it doesn't exist anymore.
+        for active_socket in active_sockets:
+            if active_socket[1] == thread_id:
+                break
+        else:
+            return
+
 
 # spacecraft_downlink(clientsocket : socket) is designed to receive data through a socket from the spacecraft.py script.
 def spacecraft_downlink(clientsocket : socket):
     global active_sockets
-    thread_id = threading.current_thread().getName()
-    thread_alive = True
-    while thread_alive == True:
+    thread_id = threading.current_thread().name
+    is_thread_alive = True
+    while is_thread_alive == True:
         data = clientsocket.recv(4096)
         if data != b'':
+            # This section has to be fleshed out to support proper data downlink.
             print(f"here is the data: {data}")
             spacecraft_data.append(data)
         
@@ -54,14 +65,13 @@ def spacecraft_downlink(clientsocket : socket):
             return
 
 
-# The list of subroutines which is fed to start_communication() to point the right socket to the right routine.
+# The subroutines which are initiated by incoming sockets.
 subroutines = [
     (b'command_line', command_line_input),
     (b'spacecraft', spacecraft_downlink)
 ]
 
-
-# spacecraft_uplink(clientsocket : socket) is designed to send data through a socket to the spacecraft.py script
+# The subroutines which are initiated by this ground station
 def spacecraft_uplink(spacecraft_socket : socket):
     global telecommands
     while True:
@@ -97,11 +107,11 @@ def accept_sockets():
                 for active_socket in active_sockets:
                     if connection == active_socket[0]:
                         active_sockets = active_sockets[:index] + active_sockets[index+1:]
-                        print(f"\nError:\t{connection} : terminated")
+                        print(f"\nError:\t{connection.decode('utf-8')} : terminated")
                         break
                     index += 1
             new_sockets.append((connection, clientsocket))
-            print(f"\n{address[0]}:{address[1]} - {connection} : connected")
+            print(f"\n{address[0]}:{address[1]} - {connection.decode('utf-8')} : connected")
             break
     else:
         print(f"Error:\tSocket did not match any accepted sockets: {connection}")
@@ -110,11 +120,13 @@ def accept_sockets():
 
 # start_communication(new_socket) is designed to dispatch threads which handle the communication between connected sockets.
 def start_communication(new_socket):
+    global subroutines
+
     # Goes through the subsystems we are looking for, and matches them to subroutine sockets that handle the communication
     for subroutine in subroutines:
         if subroutine[0] == new_socket[0]:
             subroutine_thread = Thread(target=subroutine[1], args=(new_socket[1],))
-            active_sockets.append((new_socket[0], subroutine_thread.getName()))
+            active_sockets.append((new_socket[0], subroutine_thread.name))
             subroutine_thread.start()
             break
     else:
@@ -138,7 +150,7 @@ serversocket.listen(2)
 ###############################################################################################################
 
 # A list of current commands which are being handled in the main loop.
-telecommands = ["tc_relay configure id=404"]
+telecommands = [b"tc_relay configure id=404"]
 
 # The data received from the spacecraft
 spacecraft_data = []
@@ -154,8 +166,7 @@ accept_sockets_thread = Thread()
 
 # Socket and thread which will send telecommands to the spacecraft.
 spacecraft_socket = socket(soc.AF_INET, soc.SOCK_STREAM)
-send_telecommands_thread = Thread(target=spacecraft_uplink, args=(spacecraft_socket,telecommands))
-
+send_telecommands_thread = Thread()
 
 while True:
     # Continue accepting new sockets.
@@ -173,10 +184,13 @@ while True:
 
     # Continue sending new telecommands
     if send_telecommands_thread.is_alive() == False:
+        # Makes a new thread to run on the next iteration.
+        send_telecommands_thread = Thread(target=spacecraft_uplink, args=(spacecraft_socket,))
         try:
-            spacecraft_socket.connect((address, spaceport))
+            spacecraft_socket.connect((address, spaceport)) # Connects to the spacecraft
+            active_sockets.append((b'ground_station', send_telecommands_thread.name)) # Adds it to the list of active sockets
+            spacecraft_socket.send(b'ground_station') # Specifies that this is the ground_station
+            sleep(0.1)
             send_telecommands_thread.start()
-            # Makes a new thread to run on the next iteration.
-            send_telecommands_thread = Thread(target=spacecraft_uplink, args=(spacecraft_socket))
         except:
             print("Connection to spacecraft failed.")
