@@ -201,3 +201,27 @@ def battery_kill(argument,data, battery_kill_configuration : battery_kill_config
 
 
     return 0
+
+
+def pacman(functionality, argument ,data):
+    
+    
+    TM_string_uncoded = functionality + " "+ argument + " " + data
+
+
+    
+
+
+
+    return TM_string_uncoded.encode('utf-8')
+
+def unpacman(TM):
+
+    return TM.decode('utf-8')
+
+
+
+
+
+
+
