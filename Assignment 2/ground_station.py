@@ -4,7 +4,7 @@ from socket import socket
 from threading import Thread
 from time import sleep
 from read_TC import read_TC
-from OBSW_functions import pacman, TM_id, TC_id
+from OBSW_functions import pacman, unpacman, TM_id, TC_id
 
 ###############################################################################################################
 ### Configuration
@@ -41,8 +41,9 @@ def command_line_input(clientsocket : socket):
                
             if telecommand != b'':
                 encoded_telecommand = pacman(telecommand.decode('utf-8'), TC)
-                TC.index += 1
-                telecommands.append(encoded_telecommand)
+                if read_TC(unpacman(encoded_telecommand)) != 0:
+                    TC.index += 1
+                    telecommands.append(encoded_telecommand)
 
             # Checks if the thread is still alive, and effectively terminates it doesn't exist anymore.
             for active_socket in active_sockets:
@@ -71,7 +72,7 @@ def spacecraft_downlink(clientsocket : socket):
             data = clientsocket.recv(4096)
             if data != b'':
                 # This section has to be fleshed out to support proper data downlink.
-                print(f"here is the data: {data}")
+                print(data.decode('utf-8'))
                 spacecraft_data.append(data)
             
             # Checks if the thread is still alive, and effectively terminates it doesn't exist anymore.

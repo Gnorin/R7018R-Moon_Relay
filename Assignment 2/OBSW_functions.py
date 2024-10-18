@@ -2,10 +2,11 @@
 
 
 class housekeeping_config:
-    temp = 0
-    pressure = 0
-    battery = 0
-    on_off = 0
+    temp = 1
+    pressure = 1
+    battery = 1
+    on_off = 1
+    log_period = 5
 
 
 class mode_config:

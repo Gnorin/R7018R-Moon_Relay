@@ -4,8 +4,9 @@ from socket import socket
 from threading import Thread
 from time import sleep
 from read_TC import read_TC
-from OBSW_functions import pacman, unpacman, verify_TM, tc_relay, housekeeping, mode, attitude, star_tracker, battery_kill, schedule, send_TM, TM_id, TC_id
+from OBSW_functions import pacman, unpacman, verify_TM, tc_relay, housekeeping, housekeeping_TM, mode, attitude, star_tracker, battery_kill, schedule, send_TM, TM_id, TC_id, housekeeping_config, tc_relay_config, mode_config, attitude_config, star_tracker_config, battery_kill_config, schedule_config
 from BIM import BIM
+from random import randint
 
 ###############################################################################################################
 ### Configuration
@@ -46,7 +47,7 @@ def spacecraft_uplink(clientsocket : socket):
                     data = read_flag[2]
                     TC.index = TC.index+1
                     verify_pac = verify_TM(TC,TM,functionality,argument,data)
-                    print(verify_pac[1]) #THIS IS THE VALUE FOR THE VERIFY PACKET
+                    telemetry.append(verify_pac[1])
                     if verify_pac[0] == 1:
                         match functionality:
                             case "tc_relay":
@@ -70,7 +71,7 @@ def spacecraft_uplink(clientsocket : socket):
                             telemetry.append(send_TM(data_return, data, TM))
                 telecommands = []
 
-            # Checks if the thread is still alive, and effectively terminates it doesn't exist anymore.
+            # Checks if the thread is still alive, and effectively terminates it if it doesn't exist anymore.
             for active_socket in active_sockets:
                 if active_socket[1] == thread_id:
                     break
@@ -98,7 +99,7 @@ def payload_downlink(clientsocket : socket):
                 print(f"here is the payload data: {data}")
                 payload_data.append(data)
 
-            # Checks if the thread is still alive, and effectively terminates it doesn't exist anymore.
+            # Checks if the thread is still alive, and effectively terminates it if it doesn't exist anymore.
             for active_socket in active_sockets:
                 if active_socket[1] == thread_id:
                     break
@@ -132,7 +133,9 @@ def spacecraft_downlink(clientsocket : socket):
                 clientsocket.send(telemetry[0])
                 telemetry = telemetry[1:]
 
-            # Checks if the thread is still alive, and effectively terminates it doesn't exist anymore.
+            sleep(telemetry_period)
+
+            # Checks if the thread is still alive, and effectively terminates it if it doesn't exist anymore.
             for active_socket in active_sockets:
                 if active_socket[1] == thread_id:
                     break
@@ -147,6 +150,50 @@ def spacecraft_downlink(clientsocket : socket):
                 return
             index += 1
 
+
+
+###############################################################################################################
+### Other subroutines: Cyclic housekeeping, reading main obc temperature, reading the battery charge, and
+### reading pressure data
+###############################################################################################################
+
+def cyclic_housekeeping():
+    thread_id = threading.current_thread().name
+    is_thread_alive = True
+    while is_thread_alive == True:
+        read_temperature()
+        read_pressure()
+        read_battery_charge()
+
+        hk = housekeeping_TM(TM, housekeeping_configuration, str(temperature_data), str(pressure_data), str(battery_data))
+        if hk != "":
+            housekeeping_log.append(hk)
+        
+        telemetry.append(hk)
+
+        sleep(housekeeping_configuration.log_period)
+        
+        # Checks if the thread is still alive, and effectively terminates it if it doesn't exist anymore.
+        for local_thread in local_threads:
+            if local_thread == thread_id:
+                break
+        else:
+            return
+
+def read_temperature():
+    global temperature_data
+    if housekeeping_configuration.temp != -1:
+        temperature_data = randint(55, 65) # Given in degrees Celcius
+
+def read_pressure():
+    global pressure_data
+    if housekeeping_configuration.pressure != -1:
+        pressure_data = randint(2000, 4000) * (10 ** (-14)) # Pressure given in Pascal
+
+def read_battery_charge():
+    global battery_data
+    if housekeeping_configuration.battery != -1: # This is a bit unrealistic, but we only consume battery when
+        battery_data -= randint(0, 10)/10        # we read from the batteries. Indeed, one might call it schrödingers battery
 
 ###############################################################################################################
 ### Socket handling
@@ -221,6 +268,9 @@ telecommands = []
 # A list of current commands which are being handled in the main loop.
 telemetry = []
 
+# The variable controlling how often we send telemetry
+telemetry_period = 1
+
 # A list of payload data
 payload_data = []
 
@@ -235,50 +285,13 @@ TC.index = 0
 TC.type = 'TC'
 TC.expected = TC.index + 1
 
-# Our BIM
-command_list = BIM
-
-# Housekeeping parameters
-class housekeeping_config:
-    on_off = 0
-    temp = 1
-    pressure = 1
-    battery = 1
-
-class tc_relay_config:
-    id = 0
-    br = 0
-    send_flag = 0
-
-class mode_config:
-    mode = "OFF"
-
-class attitude_config:
-   yaw_pitch_roll = "00.0 00.0 00.0"
-
-class star_tracker_config:
-    on = 0
-    off = 1
-    freq_res_fov = "00.0 00.0 00.0"
-
-class battery_kill_config:
-    code = "self-destruct"
-    killed = 0
-
-class schedule_config:
-    schedule_list = [""]
-    #MUST USE FORMAT OF 00:00 FOLLOWED BY COMMAND
-
-class TM_id:
-    index = 0
-    type = "TM"
-
-class TC_id:
-    index = 0
-    type = "TC"
-    expected = index+1
+temperature_data = 15           # Degrees Celcius
+battery_data = 100              # % Charge remaining
+pressure_data = 3*(10**(-11))   # Pascal
 
 housekeeping_configuration = housekeeping_config() #1
+
+housekeeping_log = []
 
 tc_relay_configuration = tc_relay_config() #2
 
@@ -306,8 +319,14 @@ accept_sockets_thread = Thread()
 ground_station_socket = socket(soc.AF_INET, soc.SOCK_STREAM)
 send_telemetry_thread = Thread()
 
+# A list of threads which dont have socket clients attached.
+local_threads = []
+
+# Housekeeping thread.
+housekeeping_thread = Thread()
 
 while True:
+    ### Socket code
     # Continue accepting new sockets.
     if accept_sockets_thread.is_alive() == False:
         # Makes a new thread to run on the next iteration.
@@ -340,3 +359,17 @@ while True:
                     break
                 index += 1
             print("Connection to ground station failed.")
+    
+
+    ### Cyclic housekeeping code
+    if housekeeping_thread.is_alive() == False:
+        index = 0
+        for local_thread in local_threads:
+            if local_thread == housekeeping_thread.name:
+                local_threads = local_threads[:index] + local_threads[index+1:]
+                break
+            index += 1
+
+        housekeeping_thread = Thread(target=cyclic_housekeeping)
+        local_threads.append(housekeeping_thread.name)
+        housekeeping_thread.start()
