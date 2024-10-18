@@ -6,7 +6,7 @@ class housekeeping_config:
     pressure = 1
     battery = 1
     on_off = 1
-    log_period = 5
+    log_period = 50
 
 
 class mode_config:
@@ -217,7 +217,7 @@ def unpacman(TC):
     a = 0
     while a < len(TC):
         if TC[a] == ";":
-            return[TC[0:a],TC[a:len(TC)]] 
+            return[TC[0:a],TC[a+1:len(TC)]] 
         a=a+1
     return 0
             

@@ -41,7 +41,7 @@ def spacecraft_uplink(clientsocket : socket):
             telecommands.append(clientsocket.recv(4096))
             if telecommands != []:
                 for telecommand in telecommands:
-                    read_flag = read_TC(unpacman(telecommand))
+                    read_flag = read_TC(unpacman(telecommand)[1])
                     functionality = read_flag[0]
                     argument = read_flag[1]
                     data = read_flag[2]
@@ -68,7 +68,8 @@ def spacecraft_uplink(clientsocket : socket):
                                 data_return = 0
                     #Code to check if something needs to be sent
                         if data_return != 0:
-                            telemetry.append(send_TM(data_return, data, TM))
+                            if send_TM(data_return, data, TM) != 0:
+                                telemetry.append(send_TM(data_return, data, TM))
                 telecommands = []
 
             # Checks if the thread is still alive, and effectively terminates it if it doesn't exist anymore.
@@ -81,6 +82,7 @@ def spacecraft_uplink(clientsocket : socket):
         index = 0
         for active_socket in active_sockets:
             if connection == active_socket[0]:
+                clientsocket.close()
                 active_sockets = active_sockets[:index] + active_sockets[index+1:]
                 print(f"\nError:\t{connection.decode('utf-8')} : terminated")
                 return
@@ -109,6 +111,7 @@ def payload_downlink(clientsocket : socket):
         index = 0
         for active_socket in active_sockets:
             if connection == active_socket[0]:
+                clientsocket.close()
                 active_sockets = active_sockets[:index] + active_sockets[index+1:]
                 print(f"\nError:\t{connection.decode('utf-8')} : terminated")
                 return
@@ -127,24 +130,30 @@ def spacecraft_downlink(clientsocket : socket):
     thread_id = threading.current_thread().name
     is_thread_alive = True
     connection = b'spacecraft'
-    try:
-        while is_thread_alive == True:
-            if telemetry != []:
+    #try:
+    while is_thread_alive == True:
+        if telemetry != []:
+            if type(telemetry[0]) == type(b''):
                 clientsocket.send(telemetry[0])
-                telemetry = telemetry[1:]
-
-            sleep(telemetry_period)
-
-            # Checks if the thread is still alive, and effectively terminates it if it doesn't exist anymore.
-            for active_socket in active_sockets:
-                if active_socket[1] == thread_id:
-                    break
             else:
-                return
+                print("Error:\t Tried sending a non-binary telemetry")
+            telemetry = telemetry[1:]
+            
+        sleep(telemetry_period)
+
+        # Checks if the thread is still alive, and effectively terminates it if it doesn't exist anymore.
+        for active_socket in active_sockets:
+            if active_socket[1] == thread_id:
+                break
+        else:
+            return
+    try:
+        None
     except:
         index = 0
         for active_socket in active_sockets:
             if connection == active_socket[0]:
+                clientsocket.close()
                 active_sockets = active_sockets[:index] + active_sockets[index+1:]
                 print(f"\nError:\t{connection.decode('utf-8')} : terminated")
                 return

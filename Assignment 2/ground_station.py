@@ -34,16 +34,15 @@ def command_line_input(clientsocket : socket):
     thread_id = threading.current_thread().name
     is_thread_alive = True
     connection = b'command_line'
+    
     try:
-
         while is_thread_alive == True:
             telecommand = clientsocket.recv(4096)
-               
+                
             if telecommand != b'':
-                encoded_telecommand = pacman(telecommand.decode('utf-8'), TC)
-                if read_TC(unpacman(encoded_telecommand)) != 0:
+                if read_TC(telecommand.decode('utf-8')) != 0:
                     TC.index += 1
-                    telecommands.append(encoded_telecommand)
+                    telecommands.append(pacman(telecommand.decode('utf-8'), TC))
 
             # Checks if the thread is still alive, and effectively terminates it doesn't exist anymore.
             for active_socket in active_sockets:
@@ -55,6 +54,7 @@ def command_line_input(clientsocket : socket):
         index = 0
         for active_socket in active_sockets:
             if connection == active_socket[0]:
+                clientsocket.close()
                 active_sockets = active_sockets[:index] + active_sockets[index+1:]
                 print(f"\nError:\t{connection.decode('utf-8')} : terminated")
                 return
@@ -85,6 +85,7 @@ def spacecraft_downlink(clientsocket : socket):
         index = 0
         for active_socket in active_sockets:
             if connection == active_socket[0]:
+                clientsocket.close()
                 active_sockets = active_sockets[:index] + active_sockets[index+1:]
                 print(f"\nError:\t{connection.decode('utf-8')} : terminated")
                 return
@@ -114,6 +115,7 @@ def spacecraft_uplink(spacecraft_socket : socket):
         index = 0
         for active_socket in active_sockets:
             if connection == active_socket[0]:
+                spacecraft_socket.close()
                 active_sockets = active_sockets[:index] + active_sockets[index+1:]
                 print(f"\nError:\t{connection.decode('utf-8')} : terminated")
                 return

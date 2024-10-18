@@ -35,7 +35,7 @@ class battery_kill_config:
     killed = 0
 
 class schedule_config:
-    schedule_list = [""]
+    schedule_list = []
     #MUST USE FORMAT OF 00:00 FOLLOWED BY COMMAND
 
 class TM_id:
