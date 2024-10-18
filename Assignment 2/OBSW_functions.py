@@ -197,7 +197,7 @@ def battery_kill(argument,data, battery_kill_configuration : battery_kill_config
 
 #TC/TM FUNCTIONS
 
-def pacman(command, id : TM_id,):
+def pacman(command, id : TM_id):
     
     
     TM_string_uncoded = id.type + str(id.index)+";"+command
@@ -217,8 +217,9 @@ def unpacman(TC):
     while a < len(TC):
         if TC[a] == ";":
             return[TC[0:a],TC[a:len(TC)]] 
-        else:
-            return 0
+        a=a+1
+    return 0
+            
         
     
 
