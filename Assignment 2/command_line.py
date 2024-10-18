@@ -35,8 +35,5 @@ sleep(0.1)
 ###############################################################################################################
 while True:
     command = input("Enter a command: ")
-    
-    # check command is valid.
-    valid = True
-    if valid:
-        terminal_socket.send(command.encode('utf-8'))
+
+    terminal_socket.send(command.encode('utf-8'))

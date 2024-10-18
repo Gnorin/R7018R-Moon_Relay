@@ -107,9 +107,8 @@ while True:
                 case _:
                     data_return = 0
         #Code to check if something needs to be sent
-        if data_return != 0:
-            send_data = OBSW_functions.send_TM(data_return,data,id_TM)
-            print(send_data)
+            if data_return != 0:
+                send_data = OBSW_functions.send_TM(data_return,data,id_TM)
 
     #Housekeeping command
     hk = OBSW_functions.housekeeping_TM(id_TM, housekeeping_configuration, temperature_data, pressure_data, battery_data)

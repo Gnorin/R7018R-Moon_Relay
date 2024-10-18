@@ -3,6 +3,8 @@ import threading
 from socket import socket
 from threading import Thread
 from time import sleep
+from read_TC import read_TC
+from OBSW_functions import pacman, TM_id, TC_id
 
 ###############################################################################################################
 ### Configuration
@@ -36,10 +38,11 @@ def command_line_input(clientsocket : socket):
 
         while is_thread_alive == True:
             telecommand = clientsocket.recv(4096)
-            
-            # Check telecommand here, if the telecommand is valid, add it to the pile of telecommands.        
+               
             if telecommand != b'':
-                telecommands.append(telecommand)
+                encoded_telecommand = pacman(telecommand.decode('utf-8'), TC)
+                TC.index += 1
+                telecommands.append(encoded_telecommand)
 
             # Checks if the thread is still alive, and effectively terminates it doesn't exist anymore.
             for active_socket in active_sockets:
@@ -186,6 +189,17 @@ telecommands = []
 
 # The data received from the spacecraft
 spacecraft_data = []
+
+# The TM class stores some useful data used in several functions. NOTICE: This is used for the !!TC!! counter
+TC = TM_id()
+TC.index = 0
+TC.type = "TC"
+
+# The TC class stores some useful data used in several functions. NOTICE: This is used for the !!TM!! counter
+TM = TC_id()
+TM.index = 0
+TM.type = "TM"
+TM.expected = TM.index + 1
 
 # A list of the currently active sockets.
 active_sockets = []

@@ -3,6 +3,9 @@ import threading
 from socket import socket
 from threading import Thread
 from time import sleep
+from read_TC import read_TC
+from OBSW_functions import pacman, unpacman, verify_TM, tc_relay, housekeeping, mode, attitude, star_tracker, battery_kill, schedule, send_TM, TM_id, TC_id
+from BIM import BIM
 
 ###############################################################################################################
 ### Configuration
@@ -37,7 +40,34 @@ def spacecraft_uplink(clientsocket : socket):
             telecommands.append(clientsocket.recv(4096))
             if telecommands != []:
                 for telecommand in telecommands:
-                    print(telecommand.decode('utf-8'))
+                    read_flag = read_TC(unpacman(telecommand))
+                    functionality = read_flag[0]
+                    argument = read_flag[1]
+                    data = read_flag[2]
+                    TC.index = TC.index+1
+                    verify_pac = verify_TM(TC,TM,functionality,argument,data)
+                    print(verify_pac[1]) #THIS IS THE VALUE FOR THE VERIFY PACKET
+                    if verify_pac[0] == 1:
+                        match functionality:
+                            case "tc_relay":
+                                data_return =  tc_relay(argument,data,tc_relay_configuration)
+                            case "housekeeping":
+                                data_return = housekeeping(argument,data,housekeeping_configuration)
+                            case "mode":
+                                data_return = mode(argument,data,mode_configuration)
+                            case "attitude":
+                                data_return = attitude(argument,data,attitude_configuration, mode_configuration)
+                            case "star_tracker":
+                                data_return = star_tracker(argument,data,star_tracker_configuration,mode_configuration)
+                            case "battery_kill":
+                                data_return = battery_kill(argument,data,battery_kill_configuration)
+                            case "schedule":
+                                data_return = schedule(argument,data,schedule_configuration)
+                            case _:
+                                data_return = 0
+                    #Code to check if something needs to be sent
+                        if data_return != 0:
+                            telemetry.append(send_TM(data_return, data, TM))
                 telecommands = []
 
             # Checks if the thread is still alive, and effectively terminates it doesn't exist anymore.
@@ -189,10 +219,78 @@ serversocket.listen(2)
 telecommands = []
 
 # A list of current commands which are being handled in the main loop.
-telemetry = [b'HK:t0=temp0,t1=temp1,b=bcharge']
+telemetry = []
 
 # A list of payload data
 payload_data = []
+
+# The TM class used for keeping track of the currently sent TM
+TM = TM_id()
+TM.index = 0
+TM.type = 'TM'
+
+# The TC class used for keeping track of the currently sent TC
+TC = TC_id()
+TC.index = 0
+TC.type = 'TC'
+TC.expected = TC.index + 1
+
+# Our BIM
+command_list = BIM
+
+# Housekeeping parameters
+class housekeeping_config:
+    on_off = 0
+    temp = 1
+    pressure = 1
+    battery = 1
+
+class tc_relay_config:
+    id = 0
+    br = 0
+    send_flag = 0
+
+class mode_config:
+    mode = "OFF"
+
+class attitude_config:
+   yaw_pitch_roll = "00.0 00.0 00.0"
+
+class star_tracker_config:
+    on = 0
+    off = 1
+    freq_res_fov = "00.0 00.0 00.0"
+
+class battery_kill_config:
+    code = "self-destruct"
+    killed = 0
+
+class schedule_config:
+    schedule_list = [""]
+    #MUST USE FORMAT OF 00:00 FOLLOWED BY COMMAND
+
+class TM_id:
+    index = 0
+    type = "TM"
+
+class TC_id:
+    index = 0
+    type = "TC"
+    expected = index+1
+
+housekeeping_configuration = housekeeping_config() #1
+
+tc_relay_configuration = tc_relay_config() #2
+
+mode_configuration = mode_config() #3
+
+attitude_configuration = attitude_config() #4
+
+star_tracker_configuration = star_tracker_config() #5
+
+battery_kill_configuration = battery_kill_config() #6
+
+schedule_configuration = schedule_config() #7
 
 # A list of the currently active sockets.
 active_sockets = []
