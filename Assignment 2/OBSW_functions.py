@@ -1,4 +1,4 @@
-
+from time import sleep
 
 
 class housekeeping_config:
@@ -43,8 +43,6 @@ class TC_id:
     expected = index+1
 
 def tc_relay(argument, data, tc_relay_configuration : tc_relay_config):#2
-
-    
     match argument:
         case "send":
             tc_relay_configuration.send_flag = 1     
@@ -60,12 +58,9 @@ def tc_relay(argument, data, tc_relay_configuration : tc_relay_config):#2
                         return [2,2]
             else:
                 return 0
-
     return 0
 
-
 def housekeeping(argument,data, housekeeping_configuration : housekeeping_config):#1
-    
     match argument:
         case "on":
             housekeeping_configuration.on_off = 1
@@ -81,35 +76,29 @@ def housekeeping(argument,data, housekeeping_configuration : housekeeping_config
                 case "battery":
                     housekeeping_configuration.battery = housekeeping_configuration.battery*(-1) 
                     return [1,3]    
-                case "temperature":
+                case "pressure":
                     housekeeping_configuration.pressure = housekeeping_configuration.pressure*(-1) 
-                    return [1,3]    
+                    return [1,3]
                 case _:
                     return 0
         case _:
             return 0
-               
-            
-
-    
-
-
-
 
 def mode(argument,data,mode_configuration : mode_config):#3
-
-
     match argument:
         case"change":
             match data:
                 case "SAFE":
                     mode_configuration.mode = "SAFE"
+                    sleep(5)
                     return [3,1]
                 case "NOMINAL":
                     mode_configuration.mode = "NOMINAL"
+                    sleep(5)
                     return [3,1]
                 case "MANOUEVER":
                     mode_configuration.mode = "MANOUEVER"
+                    sleep(5)
                     return [3,1]
                 case _:
                     return 0
@@ -117,7 +106,6 @@ def mode(argument,data,mode_configuration : mode_config):#3
                 return [3,1,1]
         case _:
             return 0
-
 
 def attitude(argument,data, attitude_configuration : attitude_config, mode_configuration : mode_config):#4
     if mode_configuration.mode != "MANOUEVER":
@@ -132,11 +120,9 @@ def attitude(argument,data, attitude_configuration : attitude_config, mode_confi
                 return [4,2]
             case _:
                 return 0
-
-
     return 0
-def star_tracker(argument,data, star_tracker_configuration : star_tracker_config, mode_configuration : mode_config):#5
 
+def star_tracker(argument,data, star_tracker_configuration : star_tracker_config, mode_configuration : mode_config):#5
     if mode_configuration.mode != "NOMINAL":
         return [40,40]
     else:
@@ -154,27 +140,25 @@ def star_tracker(argument,data, star_tracker_configuration : star_tracker_config
                 return [5,2]
             case _:
                 return 0
-            
-
     return 0
-def schedule(argument,data,schedule_configuration : schedule_config):#7
 
+def schedule(argument,data,schedule_configuration : schedule_config):#7
     match argument:
-            case "command":
-                schedule_configuration.schedule_list.append(data)
-                return [7,1]
-            case "clear":
-                schedule_configuration.schedule_list = [" "]
-                return [7,2]
-            case "check":
-                a = 0
-                data = ""
-                while a < len(schedule_configuration.schedule_list):
-                    data = str(a)+":"+data+schedule_configuration.schedule_list[a]+":::"
-                    a= a+1
-                return [[7,3,1],[data],[1]]
-            case _:
-                return 0
+        case "command":
+            schedule_configuration.schedule_list.append(data)
+            return [7,1]
+        case "clear":
+            schedule_configuration.schedule_list = [" "]
+            return [7,2]
+        case "check":
+            a = 0
+            data = ""
+            while a < len(schedule_configuration.schedule_list):
+                data = str(a)+":"+data+schedule_configuration.schedule_list[a]+":::"
+                a= a+1
+            return [[7,3,1],[data],[1]]
+        case _:
+            return 0
 
 
     return 0
@@ -231,11 +215,11 @@ def housekeeping_TM(id : TM_id, housekeeping_configuration : housekeeping_config
     housekeeping_TM = ""
     if housekeeping_configuration.on_off == 1:
         if housekeeping_configuration.temp == 1:
-            housekeeping_TM = housekeeping_TM + temperature_data
+            housekeeping_TM = f"[T: {temperature_data} deg C]"
         if housekeeping_configuration.pressure == 1:
-            housekeeping_TM = housekeeping_TM + " " + pressure_data
+            housekeeping_TM = housekeeping_TM + f" [P: {pressure_data} Pa]"
         if housekeeping_configuration.battery == 1:
-            housekeeping_TM = housekeeping_TM + " " + battery_data
+            housekeeping_TM = housekeeping_TM + f" [B: {battery_data}%]"
         return_data = pacman(housekeeping_TM,id)
         id.index = id.index +1
     else:

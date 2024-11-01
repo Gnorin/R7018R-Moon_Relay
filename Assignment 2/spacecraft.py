@@ -7,6 +7,7 @@ from read_TC import read_TC
 from OBSW_functions import pacman, unpacman, verify_TM, tc_relay, housekeeping, housekeeping_TM, mode, attitude, star_tracker, battery_kill, schedule, send_TM, TM_id, TC_id, housekeeping_config, tc_relay_config, mode_config, attitude_config, star_tracker_config, battery_kill_config, schedule_config
 from BIM import BIM
 from random import randint
+from datetime import datetime
 
 ###############################################################################################################
 ### Configuration
@@ -27,52 +28,23 @@ spaceport = 11000       # Port used for our spacecraft socket.
 
 
 ###############################################################################################################
-### Subroutines for communication between the ground station and the spacecraft, and the command_line window
+### Subroutines for communication between the ground station and the spacecraft
 ###############################################################################################################
 
 def spacecraft_uplink(clientsocket : socket):
     global active_sockets
     global telecommands
+    global time_tagged_telecommands
     thread_id = threading.current_thread().name
     is_thread_alive = True
     connection = b'ground_station'
     try:
         while is_thread_alive == True:
-            telecommands.append(clientsocket.recv(4096))
-            if telecommands != []:
-                for telecommand in telecommands:
-                    read_flag = read_TC(unpacman(telecommand)[1])
-                    functionality = read_flag[0]
-                    argument = read_flag[1]
-                    data = read_flag[2]
-                    TC.index = TC.index+1
-                    verify_pac = verify_TM(TC,TM,functionality,argument,data)
-                    telemetry.append(verify_pac[1])
-                    if verify_pac[0] == 1:
-                        match functionality:
-                            case "tc_relay":
-                                data_return =  tc_relay(argument,data,tc_relay_configuration)
-                            case "housekeeping":
-                                data_return = housekeeping(argument,data,housekeeping_configuration)
-                            case "mode":
-                                data_return = mode(argument,data,mode_configuration)
-                            case "attitude":
-                                data_return = attitude(argument,data,attitude_configuration, mode_configuration)
-                            case "star_tracker":
-                                data_return = star_tracker(argument,data,star_tracker_configuration,mode_configuration)
-                            case "battery_kill":
-                                data_return = battery_kill(argument,data,battery_kill_configuration)
-                            case "schedule":
-                                data_return = schedule(argument,data,schedule_configuration)
-                            case _:
-                                data_return = 0
-                    #Code to check if something needs to be sent
-                        if data_return != 0:
-                            if send_TM(data_return, data, TM) != 0:
-                                telemetry.append(send_TM(data_return, data, TM))
-                telecommands = []
+            telecommand = clientsocket.recv(4096)
+            telecommands.append(telecommand)
 
             # Checks if the thread is still alive, and effectively terminates it if it doesn't exist anymore.
+            # (Because if the function ends, the thread is done executing, which closes the thread)
             for active_socket in active_sockets:
                 if active_socket[1] == thread_id:
                     break
@@ -88,19 +60,21 @@ def spacecraft_uplink(clientsocket : socket):
                 return
             index += 1
 
-def payload_downlink(clientsocket : socket):
+def payload_comms(clientsocket : socket):
     global active_sockets
+    global payload_requests
     thread_id = threading.current_thread().name
     is_thread_alive = True
     connection = b'payload'
     try:
         while is_thread_alive == True:
-            data = clientsocket.recv(4096)
-            if data != b'':
-                # This section has to be fleshed out to support proper data downlink.
-                print(f"here is the payload data: {data}")
-                payload_data.append(data)
-
+            while len(payload_requests) > 0:
+                for payload_request in payload_requests:
+                    clientsocket.send(payload_request)
+                    data = clientsocket.recv(4096)
+                    if data != b'':
+                        print(data.decode('utf-8'))
+                payload_requests = []
             # Checks if the thread is still alive, and effectively terminates it if it doesn't exist anymore.
             for active_socket in active_sockets:
                 if active_socket[1] == thread_id:
@@ -120,7 +94,7 @@ def payload_downlink(clientsocket : socket):
 # The subroutines which are initiated by an incoming socket
 subroutines = [
     (b'ground_station', spacecraft_uplink),
-    (b'payload', payload_downlink)
+    (b'payload', payload_comms)
 ]
 
 # The subroutines which are initiated by this spacecraft
@@ -165,20 +139,137 @@ def spacecraft_downlink(clientsocket : socket):
 ### Other subroutines: Cyclic housekeeping, reading main obc temperature, reading the battery charge, and
 ### reading pressure data
 ###############################################################################################################
+def execute_telecommands():
+    # This function executes telecommands on repeat!
+    # (Using a thread defined further down in the Main Loop section)
+    # Telecommands are expected to be formated in the following way:
+    # <command> <functionality> <parameters>
+    # Supported commands are listed in BIM.py, and should be described in OBSW_functions.py
+
+    global telecommands
+
+    while True:
+        if telecommands != []:
+            for telecommand in telecommands:
+                print(telecommand.decode('utf-8'))
+                # Code taken from OBSW_main.py
+                read_flag = read_TC(unpacman(telecommand)[1])
+                functionality = read_flag[0]
+                argument = read_flag[1]
+                data = read_flag[2]
+                TC.index = TC.index+1
+                verify_pac = verify_TM(TC,TM,functionality,argument,data)
+                telemetry.append(verify_pac[1])
+                if verify_pac[0] == 1:
+                    match functionality:
+                        case "tc_relay":
+                            data_return =  tc_relay(argument,data,tc_relay_configuration)
+                            payload_requests.append(telecommand)
+                        case "housekeeping":
+                            data_return = housekeeping(argument,data,housekeeping_configuration)
+                        case "mode":
+                            data_return = mode(argument,data,mode_configuration)
+                        case "attitude":
+                            data_return = attitude(argument,data,attitude_configuration, mode_configuration)
+                        case "star_tracker":
+                            data_return = star_tracker(argument,data,star_tracker_configuration,mode_configuration)
+                        case "battery_kill":
+                            data_return = battery_kill(argument,data,battery_kill_configuration)
+                        case "schedule":
+                            data_return = schedule(argument,data,schedule_configuration)
+                            time_tagged_telecommands.append(data)
+                        case _:
+                            data_return = 0
+                #Code to check if something needs to be sent
+                    if data_return != 0:
+                        if send_TM(data_return, data, TM) != 0:
+                            telemetry.append(send_TM(data_return, data, TM))
+            telecommands = []
+
+def schedule_command():
+    # Expects a command in the format XX:YY <telecommand> OR XX:YY:ZZ <telecommand>
+    # XX is the hour, YY is the minute, ZZ is the second. This means that the scheduler
+    # cannot differentiate between days. This is acceptable for the scope of our simulation.
+
+    # This is where it takes in telecommands in the format described above.
+    global time_tagged_telecommands
+
+    # If this loops crashes, the time-tags will stop working.
+    while True:
+        if len(time_tagged_telecommands) > 0:
+            telecommand_index = -1
+            for time_tagged_telecommand in time_tagged_telecommands:
+                # Needs to be done here, as the code works by breaking later.
+                telecommand_index = telecommand_index + 1
+
+                # Chops up the given telecommand
+                i = 0
+                for c in time_tagged_telecommand:
+                    if c == " ":
+                        break
+                    i = i + 1
+                
+                # Extracting data from data string
+                time = time_tagged_telecommand[0:i]
+                telecommand = time_tagged_telecommand[i+1:]
+                
+                # Chops up the given telecommand execution time using ':' as a seperator.
+                # (Includes the last segment regardless. Also does not check if it is a
+                # number - This would crash the program, but is assumed to be checked
+                # earlier when validating the telecommand)
+                i0 = 0
+                i1 = 0
+                chopped_time = []
+                for t in time:
+                    if t == ":":
+                        chopped_time.append(time[i1:i0])
+                        i1 = i0 + 1
+                    i0 = i0 + 1
+                else:
+                    chopped_time.append(time[i1:i0])
+
+                # Checks if the current time is larger than the specified time.
+                # Can handle both XX:YY AND XX:YY:ZZ as described above, because it
+                # checks the number of the time segments.
+                current_on_board_time = datetime.now()
+
+                # If XX:YY
+                if len(chopped_time) == 2:
+                    if int(chopped_time[0]) <= current_on_board_time.hour:
+                        if int(chopped_time[1]) <= current_on_board_time.minute:
+                            telecommands.append(str.encode("TCX;" + telecommand))
+                            time_tagged_telecommands = time_tagged_telecommands[:telecommand_index] + time_tagged_telecommands[telecommand_index+1:]
+                            break
+
+                # If XX:YY:ZZ
+                elif len(chopped_time) == 3:
+                    if int(chopped_time[0]) <= current_on_board_time.hour:
+                        if int(chopped_time[1]) <= current_on_board_time.minute:
+                            if int(chopped_time[1]) <= current_on_board_time.second:
+                                telecommands.append(str.encode("TCX;" + telecommand))
+                                time_tagged_telecommands = time_tagged_telecommands[:telecommand_index] + time_tagged_telecommands[telecommand_index+1:]
+                                break
+
+                # If something else, remove the time-tagged telecommand
+                else:
+                    time_tagged_telecommands = time_tagged_telecommands[:telecommand_index] + time_tagged_telecommands[telecommand_index+1:]
+                    print(f"Bad time {chopped_time}")
+                    break
 
 def cyclic_housekeeping():
     thread_id = threading.current_thread().name
     is_thread_alive = True
     while is_thread_alive == True:
-        read_temperature()
-        read_pressure()
-        read_battery_charge()
+        if housekeeping_configuration.on_off == 1:
+            read_temperature()
+            read_pressure()
+            read_battery_charge()
 
-        hk = housekeeping_TM(TM, housekeeping_configuration, str(temperature_data), str(pressure_data), str(battery_data))
-        if hk != "":
-            housekeeping_log.append(hk)
-        
-        telemetry.append(hk)
+            hk = housekeeping_TM(TM, housekeeping_configuration, str(temperature_data), str(pressure_data), str(battery_data))
+            if hk != "":
+                housekeeping_log.append(hk)
+            
+            telemetry.append(hk)
 
         sleep(housekeeping_configuration.log_period)
         
@@ -277,8 +368,13 @@ telecommands = []
 # A list of current commands which are being handled in the main loop.
 telemetry = []
 
+time_tagged_telecommands = []
+
 # The variable controlling how often we send telemetry
 telemetry_period = 1
+
+# A list of requests to send to the payload
+payload_requests = []
 
 # A list of payload data
 payload_data = []
@@ -331,10 +427,18 @@ send_telemetry_thread = Thread()
 # A list of threads which dont have socket clients attached.
 local_threads = []
 
+# Telecommand execution thread.
+execute_telecommands_thread = Thread(target=execute_telecommands)
+execute_telecommands_thread.start()
+
 # Housekeeping thread.
 housekeeping_thread = Thread()
 
-while True:
+# Schedule thread.
+time_tag_thread = Thread(target=schedule_command)
+time_tag_thread.start()
+
+while battery_kill_configuration.killed != 1:
     ### Socket code
     # Continue accepting new sockets.
     if accept_sockets_thread.is_alive() == False:
@@ -370,7 +474,7 @@ while True:
             print("Connection to ground station failed.")
     
 
-    ### Cyclic housekeeping code
+    # Cyclic housekeeping code
     if housekeeping_thread.is_alive() == False:
         index = 0
         for local_thread in local_threads:
